@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>$BIRDE — Eye of the Hunter</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#F5C518;--green:#00FF88;--red:#EF4444;
+  --bg:#060606;--bg2:#0F0F0F;--bg3:#181818;--bdr:#272727;
+  --br:#CD7F32;--sv:#A8A8B3;--dm:#22D3EE;--dim:#555;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:#fff;font-family:'Syne',system-ui,sans-serif;}
+
+/* ── TICKER ── */
+#ticker{
+  position:fixed;top:env(safe-area-inset-top,0);left:0;right:0;z-index:300;
+  height:44px;background:#111;border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;gap:8px;padding:0 14px;
+}
+.tname{color:var(--gold);font-weight:900;font-size:.9rem;margin-right:auto}
+.tprice{font-family:'Space Mono',monospace;font-size:.72rem}
+.pill{padding:3px 8px;border-radius:20px;font-size:.66rem;font-weight:700}
+.up{background:#00FF8818;color:var(--green)}.dn{background:#EF444418;color:var(--red)}
+.pool{background:#F5C51815;color:var(--gold)}
+
+/* ── CONNECT SCREEN ── */
+#cScr{
+  position:fixed;inset:0;z-index:200;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:env(safe-area-inset-top,0) 18px 18px;
+  padding-top:calc(env(safe-area-inset-top,0) + 54px);
+  gap:16px;text-align:center;overflow-y:auto;
+}
+.eyePulse{width:78px;height:78px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle at 40% 40%,#000 28%,#F5C518 52%,#F59E0B 72%,#78350F 100%);
+  box-shadow:0 0 40px #F5C51855;animation:pulse 2.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 18px #F5C51840;transform:scale(1)}50%{box-shadow:0 0 55px #F5C51888;transform:scale(1.07)}}
+.bigT{font-size:clamp(1.8rem,8vw,2.6rem);font-weight:900;color:var(--gold);letter-spacing:-1px;line-height:1}
+.bigS{color:var(--dim);font-size:.82rem;max-width:250px;line-height:1.6;font-family:sans-serif}
+.cCard{background:var(--bg2);border:1px solid var(--bdr);border-radius:16px;padding:16px;width:100%;max-width:320px;}
+.clbl{font-size:.64rem;color:var(--dim);letter-spacing:.4px;margin-bottom:8px}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.tgi{background:var(--bg3);border-radius:9px;padding:8px 5px;text-align:center;font-size:.66rem;line-height:1.5}
+.tgi span{font-size:1.1rem;display:block}
+.inp{width:100%;padding:10px 12px;margin-bottom:8px;border-radius:10px;
+  border:1px solid var(--bdr);background:var(--bg3);color:#fff;
+  font-size:.8rem;font-family:'Space Mono',monospace;outline:none;transition:border-color .2s}
+.inp:focus{border-color:var(--gold)}
+.btnMain{width:100%;padding:13px;border-radius:11px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#B45309,var(--gold));
+  color:#000;font-family:'Syne',sans-serif;font-weight:900;font-size:.94rem;}
+.safeNote{background:#00FF8810;border:1px solid #00FF8826;border-radius:8px;
+  padding:8px 12px;font-size:.68rem;color:var(--green);max-width:320px;font-family:sans-serif;line-height:1.5;text-align:left;}
+.fnote{font-size:.64rem;color:var(--dim);max-width:250px;line-height:1.5;font-family:sans-serif}
+
+/* ── GAME CANVAS — FILLS FULL SCREEN ── */
+#gCon{
+  position:fixed;
+  top:calc(env(safe-area-inset-top,0) + 44px);
+  left:0;right:0;
+  bottom:env(safe-area-inset-bottom,0);
+  display:none;
+}
+#gc{width:100%;height:100%;display:block;touch-action:none;cursor:pointer;}
+
+/* overlays sit inside gCon */
+.ov{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:11px;padding:20px;background:#000000BB;text-align:center;
+}
+.ovEye{width:58px;height:58px;border-radius:50%;
+  background:radial-gradient(circle at 40% 40%,#000 28%,#F5C518 52%,#F59E0B 72%,#78350F 100%);
+  box-shadow:0 0 30px #F5C51877;}
+.ovT{font-size:1.6rem;font-weight:900}
+.ovS{color:#999;font-size:.78rem;font-family:sans-serif;line-height:1.55;max-width:280px}
+.puLeg{display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;width:100%;max-width:240px}
+.pLi{display:flex;align-items:center;gap:5px;font-size:.64rem;font-family:sans-serif;color:#aaa}
+.pDot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.btnGo{padding:12px 30px;border-radius:12px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#B45309,var(--gold));
+  color:#000;font-family:'Syne',sans-serif;font-weight:900;font-size:.95rem;}
+.btnSec{padding:8px 20px;border-radius:9px;cursor:pointer;font-weight:700;
+  border:1.5px solid var(--green);background:transparent;color:var(--green);
+  font-family:'Syne',sans-serif;font-size:.82rem}
+
+/* ── BOTTOM SHEET — slides up on game over ── */
+#botSheet{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  background:#0F0F0F;border-top:1px solid var(--bdr);
+  border-radius:16px 16px 0 0;
+  display:none;flex-direction:column;
+  max-height:52vh;
+  padding-bottom:env(safe-area-inset-bottom,0);
+}
+#botSheet.open{display:flex}
+#sheetHandle{width:36px;height:4px;background:#333;border-radius:2px;margin:10px auto 0;}
+#bTabs{display:flex;border-bottom:1px solid var(--bdr);}
+.btab{flex:1;padding:10px 4px;text-align:center;font-size:.72rem;font-weight:800;
+  color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.btab.on{color:var(--gold);border-bottom-color:var(--gold);}
+#bPane{padding:12px;overflow-y:auto;flex:1;}
+
+/* leaderboard */
+.lbRow{display:flex;align-items:center;gap:8px;padding:8px 9px;
+  border-radius:9px;background:#151515;margin-bottom:5px;border:1px solid transparent}
+.lbRow.me{border-color:var(--gold)}
+.lbR{font-size:.9rem;min-width:22px;text-align:center;font-weight:900}
+.lbA{font-size:.63rem;color:var(--dim);flex:1;font-family:'Space Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbP{font-size:.82rem;font-weight:900;color:var(--gold);font-family:'Space Mono',monospace}
+.lbEm{text-align:center;color:var(--dim);padding:20px;font-size:.78rem;font-family:sans-serif}
+
+/* missions */
+.msC{display:flex;align-items:center;gap:9px;background:#151515;
+  border:1px solid var(--bdr);border-radius:10px;padding:10px;margin-bottom:7px}
+.msI{font-size:1.2rem;min-width:28px;text-align:center}
+.msB{flex:1;min-width:0}
+.msT{font-size:.76rem;font-weight:800;margin-bottom:1px}
+.msD{font-size:.62rem;color:var(--dim);font-family:sans-serif}
+.msPr{height:3px;background:var(--bg3);border-radius:2px;margin-top:4px;overflow:hidden}
+.msBr{height:100%;border-radius:2px;background:linear-gradient(90deg,#B45309,var(--gold));transition:width .5s}
+.msR{font-size:.64rem;color:var(--green);font-weight:700;white-space:nowrap}
+.msDone{opacity:.4}
+
+/* prizes */
+.prBx{background:#151515;border-radius:10px;padding:11px;margin-bottom:7px}
+.prHd{font-size:.62rem;color:var(--dim);letter-spacing:.4px;margin-bottom:7px}
+.prRw{display:flex;justify-content:space-between;align-items:center;
+  padding:5px 0;border-bottom:1px solid var(--bdr);font-size:.76rem}
+.prRw:last-child{border:none}
+.prAm{font-weight:900;color:var(--gold);font-family:'Space Mono',monospace;font-size:.7rem}
+.cmB{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:5px}
+.cmF{height:100%;background:linear-gradient(90deg,#B45309,var(--gold));border-radius:3px}
+.cmL{display:flex;justify-content:space-between;font-size:.6rem;color:var(--dim);font-family:'Space Mono',monospace;margin-bottom:3px}
+
+/* share modal */
+#sMod{display:none;position:fixed;inset:0;z-index:999;
+  background:#000000AA;align-items:center;justify-content:center;padding:18px}
+#sMod.open{display:flex}
+.smC{background:var(--bg3);border:1px solid var(--bdr);border-radius:16px;
+  padding:20px;max-width:300px;width:100%;text-align:center}
+.smT{font-size:1.2rem;font-weight:900;color:var(--gold);margin-bottom:3px}
+.smS{font-size:.74rem;color:var(--dim);margin-bottom:11px;font-family:sans-serif}
+.smTx{background:var(--bg2);border-radius:8px;padding:10px;font-size:.68rem;
+  color:#888;text-align:left;margin-bottom:11px;line-height:1.6;
+  border:1px solid var(--bdr);font-family:'Space Mono',monospace}
+.btnTw{width:100%;padding:10px;border-radius:9px;border:none;cursor:pointer;
+  background:#1D9BF0;color:#fff;font-weight:800;font-size:.84rem;margin-bottom:7px;font-family:'Syne',sans-serif}
+.btnCl{width:100%;padding:8px;border-radius:9px;border:1px solid var(--bdr);
+  background:transparent;color:var(--dim);font-size:.76rem;cursor:pointer;font-family:'Syne',sans-serif}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div id="ticker">
+  <span class="tname">👁️ $BIRDE</span>
+  <span id="tP" class="tprice">$0.000000000</span>
+  <span id="tC" class="pill up">▲ 0.00%</span>
+  <span class="pill pool">🏆 POOL LIVE</span>
+</div>
+
+<!-- CONNECT SCREEN -->
+<div id="cScr">
+  <div class="eyePulse"></div>
+  <div><h1 class="bigT">$BIRDE</h1>
+    <p style="color:#aaa;font-size:.95rem;font-weight:700;margin-top:2px">Eye of the Hunter</p></div>
+  <p class="bigS">Hold $BIRDE, unlock your tier, hunt coins and collect power-ups to earn rewards.</p>
+  <div class="safeNote">🔒 <strong>Safe:</strong> We only read your public wallet address. No signature, no permissions. Nothing can be taken.</div>
+  <div class="cCard">
+    <p class="clbl">HOLDER TIERS — MORE $BIRDE = HIGHER SCORE MULTIPLIER</p>
+    <div class="tgrid">
+      <div class="tgi"><span>🥉</span><strong style="color:var(--br)">Bronze</strong><br><span style="color:var(--dim)">100K • 1×</span></div>
+      <div class="tgi"><span>🥈</span><strong style="color:var(--sv)">Silver</strong><br><span style="color:var(--dim)">500K • 1.5×</span></div>
+      <div class="tgi"><span>🥇</span><strong style="color:var(--gold)">Gold</strong><br><span style="color:var(--dim)">1M • 2×</span></div>
+      <div class="tgi"><span>💎</span><strong style="color:var(--dm)">Diamond</strong><br><span style="color:var(--dim)">10M • 3×</span></div>
+    </div>
+    <input class="inp" id="wA" placeholder="Your Solana wallet address">
+    <input class="inp" id="wB" placeholder="Your $BIRDE token balance" type="number" min="0">
+    <button class="btnMain" onclick="go()">👁️ Connect & Hunt</button>
+  </div>
+  <p class="fnote">Free play for non-holders • Buy $BIRDE on pump.fun, Jupiter or Coinbase</p>
+</div>
+
+<!-- FULL SCREEN GAME CANVAS -->
+<div id="gCon">
+  <canvas id="gc"></canvas>
+
+  <!-- Start overlay -->
+  <div class="ov" id="ovSt">
+    <div class="ovEye"></div>
+    <div class="ovT">Eye of the Hunter</div>
+    <div class="ovS">Tap anywhere on screen to flap up<br>Gravity pulls you down — survive!<br>Dodge 🐻 bears & 📉 red candles<br>Grab power-up bubbles for boosts</div>
+    <div class="puLeg">
+      <div class="pLi"><div class="pDot" style="background:#00FF88"></div>pump.fun — 2× score</div>
+      <div class="pLi"><div class="pDot" style="background:#3B82F6"></div>2X — double coins</div>
+      <div class="pLi"><div class="pDot" style="background:#F5C518"></div>Moon — 3× score</div>
+      <div class="pLi"><div class="pDot" style="background:#8B5CF6"></div>Shield — block 1 hit</div>
+      <div class="pLi"><div class="pDot" style="background:#EF4444"></div>Magnet — pull coins</div>
+      <div class="pLi"><div class="pDot" style="background:#F97316"></div>FOMO — light gravity</div>
+    </div>
+    <div class="ovS" style="font-size:.7rem">Tier: <span id="mHint" style="color:var(--green)">1×</span> base multiplier</div>
+    <button class="btnGo" onclick="startGame()">▶ Start Hunting</button>
+  </div>
+
+  <!-- Game over overlay -->
+  <div class="ov hidden" id="ovEnd">
+    <div class="ovT" style="color:var(--red)">💀 RUGGED!</div>
+    <div id="eScore" style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Space Mono',monospace">0</div>
+    <div id="nBest" class="hidden" style="color:var(--green);font-weight:700;font-size:.82rem">🏆 New High Score!</div>
+    <button class="btnGo" onclick="startGame()">🔄 Hunt Again</button>
+    <button class="btnSec" onclick="openSh()">🐦 Share Score</button>
+    <div style="font-size:.68rem;color:var(--dim);font-family:sans-serif">Scroll down for leaderboard & prizes</div>
+  </div>
+</div>
+
+<!-- BOTTOM SHEET (shows on game over) -->
+<div id="botSheet">
+  <div id="sheetHandle"></div>
+  <div id="bTabs">
+    <div class="btab on" onclick="swT('lb',this)">🏆 Board</div>
+    <div class="btab" onclick="swT('ms',this)">🎯 Missions</div>
+    <div class="btab" onclick="swT('pr',this)">💰 Prizes</div>
+  </div>
+  <div id="bPane">
+    <div id="t-lb"><div id="lbL"></div></div>
+    <div id="t-ms" class="hidden"><div id="msL"></div></div>
+    <div id="t-pr" class="hidden">
+      <div class="prBx">
+        <div class="prHd">WEEKLY LEADERBOARD</div>
+        <div class="prRw"><span>🥇 #1 Hunter</span><span class="prAm">5,000,000 $BIRDE</span></div>
+        <div class="prRw"><span>🥈 #2</span><span class="prAm">3,000,000 $BIRDE</span></div>
+        <div class="prRw"><span>🥉 #3</span><span class="prAm">2,000,000 $BIRDE</span></div>
+        <div class="prRw"><span>🎯 Top 4–10</span><span class="prAm">500K each</span></div>
+      </div>
+      <div class="prBx">
+        <div class="prHd">DAILY DRAWS</div>
+        <div class="prRw"><span>🍀 Lucky Holder</span><span class="prAm">200K $BIRDE</span></div>
+        <div class="prRw"><span>🔥 Best Streak</span><span class="prAm">300K $BIRDE</span></div>
+      </div>
+      <div class="prBx">
+        <div class="prHd">FLOCK GOAL</div>
+        <div class="cmL"><span>247,830 pts</span><span>Goal: 1,000,000</span></div>
+        <div class="cmB"><div class="cmF" style="width:24.8%"></div></div>
+        <p style="font-size:.64rem;color:var(--dim);margin-top:5px;line-height:1.5;font-family:sans-serif">Hit 1M total → 2M $BIRDE bonus for all active players!</p>
+      </div>
+      <div class="prBx" style="border:1px solid #F5C51826">
+        <div class="prHd" style="color:var(--gold)">BUY $BIRDE</div>
+        <div class="prRw"><span>pump.fun</span><span class="prAm" style="color:var(--green)">JB4eRM...Sfpump</span></div>
+        <div class="prRw"><span>Jupiter DEX</span><span class="prAm" style="color:var(--green)">↗ Swap</span></div>
+        <div class="prRw"><span>Coinbase</span><span class="prAm" style="color:var(--green)">↗ Buy</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div id="sMod">
+  <div class="smC">
+    <div class="smT">🦅 Share the Hunt</div>
+    <p class="smS">Every share spreads $BIRDE + earns mission reward</p>
+    <div class="smTx" id="smTx">...</div>
+    <button class="btnTw" onclick="doTweet()">🐦 Post on X (Twitter)</button>
+    <button class="btnCl" onclick="closeSh()">Close</button>
+  </div>
+</div>
+
+<script>
+/* ── CONFIG ──────────────────────────────── */
+const CFG={
+  sym:'$BIRDE',tags:'#BIRDE #BirdEye #pumpfun #Solana',
+  link:'https://www.birdeyememe.com',basePrice:0.0000000012,
+  tiers:{bronze:100000,silver:500000,gold:1000000,diamond:10000000},
+  mults:{none:.5,bronze:1,silver:1.5,gold:2,diamond:3},
+};
+const PU=[
+  {id:'pump', lbl:'PUMP.FUN',col:'#00FF88',glow:'#00FF88',txt:'×2 SCORE', fx:'m2',dur:380,ch:.28,in:'#003322'},
+  {id:'twox', lbl:'2X',      col:'#3B82F6',glow:'#60A5FA',txt:'×2 COINS', fx:'m2',dur:320,ch:.25,in:'#0F1F3D'},
+  {id:'moon', lbl:'🌙 3X',   col:'#F5C518',glow:'#F5C518',txt:'×3 MOON',  fx:'m3',dur:260,ch:.18,in:'#2A1F00'},
+  {id:'shld', lbl:'🛡️',     col:'#8B5CF6',glow:'#A78BFA',txt:'SHIELD',   fx:'sh', dur:0,  ch:.14,in:'#1A0A3D'},
+  {id:'mgnt', lbl:'🧲',      col:'#EF4444',glow:'#F87171',txt:'MAGNET',   fx:'mg',dur:380,ch:.10,in:'#2A0000'},
+  {id:'fomo', lbl:'FOMO',    col:'#F97316',glow:'#FB923C',txt:'FOMO!',    fx:'fo',dur:300,ch:.05,in:'#2A1000'},
+];
+
+/* ── STATE ───────────────────────────────── */
+let S={wallet:'',tokens:0,tier:'none',mult:.5,streak:0,lastPlay:'',
+       bestScore:0,gamesPlayed:0,coinsTotal:0,shared:0,puC:0};
+
+/* ── DYNAMIC GAME DIMENSIONS ─────────────── */
+let CW,CH,BR,GAP,OBW,BX; // set in initCanvas
+
+/* ── GAME STATE ──────────────────────────── */
+let canvas,ctx,bird,obsArr,coinArr,puArr,partArr;
+let frame,physFrame,spd,running,raf,lives,score;
+let waitTap=true;
+let aPU={id:null,t:0,mx:0},shield=false,magnet=false;
+let flash={on:false,col:'#fff',a:0};
+let tapA=1,tapD=-1;
+
+function ldS(){try{const d=localStorage.getItem('birde_v4');if(d)Object.assign(S,JSON.parse(d));}catch(e){}}
+function svS(){try{localStorage.setItem('birde_v4',JSON.stringify(S));}catch(e){}}
+
+/* ── WALLET ──────────────────────────────── */
+function go(){
+  const w=document.getElementById('wA').value.trim();
+  const t=parseInt(document.getElementById('wB').value)||0;
+  if(!w){alert('Enter your wallet address');return;}
+  S.wallet=w;S.tokens=t;S.tier=gT(t);S.mult=CFG.mults[S.tier]||.5;
+  ckStreak();svS();showGame();
+}
+function gT(t){const x=CFG.tiers;if(t>=x.diamond)return'diamond';if(t>=x.gold)return'gold';if(t>=x.silver)return'silver';if(t>=x.bronze)return'bronze';return'none';}
+function tL(t){return{none:'⚠️ Free',bronze:'🥉 Bronze',silver:'🥈 Silver',gold:'🥇 Gold',diamond:'💎 Diamond'}[t]||'—';}
+function shW(w){return w.length>8?w.slice(0,4)+'…'+w.slice(-4):w;}
+function ckStreak(){
+  const td=new Date().toDateString(),yt=new Date(Date.now()-864e5).toDateString();
+  if(S.lastPlay===td)return;S.streak=(S.lastPlay===yt)?S.streak+1:1;S.lastPlay=td;svS();
+}
+
+/* ── SHOW GAME ───────────────────────────── */
+function showGame(){
+  document.getElementById('cScr').style.display='none';
+  document.getElementById('gCon').style.display='block';
+  document.getElementById('mHint').textContent=S.mult+'×';
+  S.bestScore=parseInt(localStorage.getItem('birde_b4_'+S.wallet)||0);
+  initCanvas();rnLB();rnMS();startTicker();
+}
+
+/* ── CANVAS INIT ─────────────────────────── */
+function initCanvas(){
+  canvas=document.getElementById('gc');
+  ctx=canvas.getContext('2d');
+
+  function resize(){
+    canvas.width=canvas.offsetWidth;
+    canvas.height=canvas.offsetHeight;
+    CW=canvas.width; CH=canvas.height;
+    // scale game elements to screen size
+    BR=Math.round(Math.min(CW,CH)*0.052);   // bird radius ~5% of smaller dim
+    GAP=Math.round(CH*0.34);                 // gap = 34% of canvas height
+    OBW=Math.round(CW*0.13);                 // obstacle width = 13% of canvas width
+    BX=Math.round(CW*0.22);                  // bird X = 22% from left
+    drawIdle();
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  canvas.addEventListener('mousedown',onTap);
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();onTap();},{passive:false});
+  document.addEventListener('keydown',e=>{
+    if(e.code==='Space'||e.key==='ArrowUp'){e.preventDefault();onTap();}
+  });
+}
+
+function onTap(){
+  if(!running)return;
+  if(waitTap){waitTap=false;bird.vy=-CH*0.017;}
+  else{bird.vy=-CH*0.017;}
+}
+
+/* ── START GAME ──────────────────────────── */
+function startGame(){
+  document.getElementById('ovSt').classList.add('hidden');
+  document.getElementById('ovEnd').classList.add('hidden');
+  document.getElementById('botSheet').classList.remove('open');
+
+  bird={y:CH/2,vy:0};
+  waitTap=true;physFrame=0;
+  obsArr=[];coinArr=[];puArr=[];partArr=[];
+  frame=0;spd=CW*0.006;running=true;lives=3;score=0;
+  aPU={id:null,t:0,mx:0};shield=false;magnet=false;
+  flash={on:false,col:'#fff',a:0};tapA=1;tapD=-1;
+  if(raf)cancelAnimationFrame(raf);loop();
+}
+
+function loop(){update();draw();if(running)raf=requestAnimationFrame(loop);}
+
+/* ── UPDATE ──────────────────────────────── */
+function update(){
+  frame++;
+
+  if(waitTap){
+    bird.y=CH/2+Math.sin(frame*0.055)*Math.round(CH*0.03);
+    tapA+=tapD*0.018;if(tapA<=0.28||tapA>=1)tapD*=-1;
+    return;
+  }
+
+  physFrame++;
+  if(physFrame%1100===0&&spd<CW*0.014)spd+=CW*0.0004;
+
+  const grav=aPU.id==='fo'?CH*0.0006:CH*0.0009;
+  bird.vy+=grav; bird.y+=bird.vy;
+  if(bird.y<BR){bird.y=BR;bird.vy=0;}
+  if(bird.y>CH-BR){hitBird();return;}
+
+  if(aPU.id&&aPU.t>0){aPU.t--;if(aPU.t<=0)clrPU();}
+  if(magnet){
+    coinArr.forEach(c=>{const dx=BX-c.x,dy=bird.y-c.y,d=Math.hypot(dx,dy);if(d<CH*.28){c.x+=dx*.07;c.y+=dy*.07;}});
+  }
+
+  // spawn obstacles: grace period of 90 physFrames after first tap
+  const spawnEvery=Math.max(Math.round(CH*0.19),Math.round(CH*0.19-physFrame/40));
+  if(physFrame>90&&physFrame%spawnEvery===0){
+    const gY=GAP/2+CH*0.07+Math.random()*(CH-GAP-CH*0.14);
+    obsArr.push({x:CW+OBW,gY,passed:false});
+    for(let i=0;i<3;i++)coinArr.push({x:CW+OBW+(i-1)*Math.round(CW*.09),y:gY+(Math.random()-.5)*GAP*.38,done:false});
+    if(Math.random()<.28)spawnPU(CW+OBW+CW*.11+(Math.random()-.5)*CW*.08,gY+(Math.random()-.5)*GAP*.4);
+  }
+
+  obsArr=obsArr.filter(o=>{
+    o.x-=spd;
+    if(!o.passed&&o.x<BX){o.passed=true;score+=Math.round(5*eM());document.getElementById('eScore').textContent=score.toLocaleString();}
+    if(Math.abs(BX-o.x)<OBW/2+BR-4){
+      if(bird.y<o.gY-GAP/2+BR||bird.y>o.gY+GAP/2-BR){hitBird();return false;}
+    }
+    return o.x>-OBW;
+  });
+
+  coinArr=coinArr.filter(c=>{
+    c.x-=spd;
+    if(!c.done&&Math.hypot(c.x-BX,c.y-bird.y)<BR+CW*.04){
+      c.done=true;S.coinsTotal++;const pts=Math.round(10*eM());score+=pts;addP(c.x,c.y,'+'+pts,'#F5C518');
+    }
+    return c.x>-20&&!c.done;
+  });
+
+  puArr=puArr.filter(p=>{
+    p.x-=spd*.88;p.w=(p.w||0)+.07;p.y+=Math.sin(p.w)*.5;
+    if(!p.done&&Math.hypot(p.x-BX,p.y-bird.y)<BR+CW*.055){p.done=true;colPU(p.type);return false;}
+    return p.x>-40&&!p.done;
+  });
+
+  partArr=partArr.filter(p=>{p.y-=CH*0.0035;p.o-=.025;return p.o>0;});
+  if(flash.on){flash.a-=.06;if(flash.a<=0)flash.on=false;}
+}
+
+function eM(){return aPU.id==='m3'?S.mult*3:aPU.id==='m2'||aPU.id==='fo'?S.mult*2:S.mult;}
+
+function hitBird(){
+  if(shield){shield=false;addP(BX,bird.y,'🛡️ BLOCKED!','#8B5CF6');flash={on:true,col:'#8B5CF6',a:.3};return;}
+  lives--;addP(BX,bird.y,'💀','#EF4444');flash={on:true,col:'#EF4444',a:.35};bird.vy=-CH*0.01;
+  if(lives<=0)setTimeout(endGame,350);
+}
+
+function spawnPU(x,y){
+  let r=Math.random(),c=0;
+  for(const t of PU){c+=t.ch;if(r<c){puArr.push({x,y,type:t,done:false,w:0});return;}}
+  puArr.push({x,y,type:PU[0],done:false,w:0});
+}
+
+function colPU(type){
+  clrPU();S.puC=(S.puC||0)+1;flash={on:true,col:type.col,a:.35};addP(BX,bird.y-CH*.05,type.txt,type.col);
+  if(type.fx==='sh')shield=true;
+  else if(type.fx==='mg'){magnet=true;aPU={id:'mg',t:type.dur,mx:type.dur};}
+  else if(type.fx==='m3')aPU={id:'m3',t:type.dur,mx:type.dur};
+  else if(type.fx==='m2')aPU={id:'m2',t:type.dur,mx:type.dur};
+  else if(type.fx==='fo')aPU={id:'fo',t:type.dur,mx:type.dur};
+}
+function clrPU(){aPU={id:null,t:0,mx:0};magnet=false;}
+function addP(x,y,t,col){partArr.push({x,y,t,col,o:1});}
+
+/* ── DRAW ────────────────────────────────── */
+function draw(){
+  // sky
+  const sky=ctx.createLinearGradient(0,0,0,CH);
+  sky.addColorStop(0,'#070714');sky.addColorStop(1,'#0D0D20');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,CW,CH);
+
+  // stars
+  ctx.fillStyle='#ffffff16';
+  for(let i=0;i<40;i++){
+    const sx=(i*173.1+frame*.04)%CW,sy=(i*97.3+frame*.015)%CH;
+    ctx.beginPath();ctx.arc(sx,sy,i%5===0?1.6:.8,0,Math.PI*2);ctx.fill();
+  }
+
+  // obstacles
+  obsArr.forEach(o=>{
+    const top=o.gY-GAP/2,bot=o.gY+GAP/2;
+    const wg=ctx.createLinearGradient(o.x-OBW/2,0,o.x+OBW/2,0);
+    wg.addColorStop(0,'#3A0000');wg.addColorStop(.5,'#6B1111');wg.addColorStop(1,'#3A0000');
+    ctx.fillStyle=wg;
+    ctx.fillRect(o.x-OBW/2,0,OBW,Math.max(0,top));
+    ctx.fillRect(o.x-OBW/2,bot,OBW,CH-bot);
+    // tips
+    ctx.fillStyle='#EF4444';
+    ctx.fillRect(o.x-OBW/2-5,top-CW*.03,OBW+10,CW*.03);
+    ctx.fillRect(o.x-OBW/2-5,bot,OBW+10,CW*.03);
+    // wicks
+    ctx.strokeStyle='#EF444466';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(o.x,top-CW*.03);ctx.lineTo(o.x,top-CW*.06);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(o.x,bot+CW*.03);ctx.lineTo(o.x,bot+CW*.06);ctx.stroke();
+    // bear
+    const bSz=Math.round(CW*.06);
+    ctx.font=bSz+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('🐻',o.x,bot+bSz*.9);
+    ctx.fillStyle='#EF4444';ctx.font=`bold ${Math.round(bSz*.45)}px Syne,sans-serif`;
+    ctx.fillText('SELL',o.x,bot+bSz*1.7);
+  });
+
+  // coins
+  const cSz=Math.round(CW*.05);
+  coinArr.forEach(c=>{
+    if(!c.done){ctx.font=cSz+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🪙',c.x,c.y);}
+  });
+
+  // power-up bubbles
+  puArr.forEach(p=>{if(!p.done)drawBubble(p.x,p.y,p.type);});
+
+  // bird
+  drawEye(BX,bird.y,waitTap?0:Math.min(Math.max(bird.vy/(CH*.017),-.45),.5));
+
+  // shield ring
+  if(shield){
+    ctx.save();ctx.translate(BX,bird.y);
+    ctx.shadowColor='#8B5CF6';ctx.shadowBlur=14;
+    ctx.strokeStyle='#A78BFA88';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.arc(0,0,BR+BR*.55,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+  // magnet field
+  if(magnet){
+    ctx.save();ctx.translate(BX,bird.y);
+    ctx.strokeStyle='#EF444428';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(0,0,CH*.28,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+
+  // particles
+  partArr.forEach(p=>{
+    ctx.globalAlpha=p.o;ctx.fillStyle=p.col;
+    ctx.font=`bold ${Math.round(CW*.034)}px Syne,sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.t,p.x,p.y);
+  });ctx.globalAlpha=1;
+
+  // screen flash
+  if(flash.on&&flash.a>0){
+    ctx.fillStyle=flash.col+(Math.round(flash.a*255).toString(16).padStart(2,'0'));
+    ctx.fillRect(0,0,CW,CH);
+  }
+
+  // ── HUD drawn on canvas ──
+  if(!waitTap){
+    const fS=Math.round(CW*.06),fSm=Math.round(CW*.032);
+
+    // score — top left
+    ctx.shadowColor='#F5C518';ctx.shadowBlur=8;
+    ctx.fillStyle='#F5C518';ctx.font=`900 ${fS}px Space Mono,monospace`;
+    ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText(score.toLocaleString(),CW*.04,CH*.028);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#55555599';ctx.font=`bold ${fSm}px Space Mono,monospace`;
+    ctx.fillText('BEST '+S.bestScore,CW*.04,CH*.028+fS*1.1);
+
+    // lives — top right
+    const hSz=Math.round(CW*.06);ctx.font=hSz+'px serif';ctx.textAlign='right';ctx.textBaseline='top';
+    for(let i=0;i<3;i++){ctx.globalAlpha=i<lives?1:.12;ctx.fillText('❤️',CW*(1-.04)-i*(hSz*.88),CH*.028);}
+    ctx.globalAlpha=1;
+
+    // tier + mult — small, top center
+    ctx.fillStyle='#F5C51866';ctx.font=`bold ${fSm}px Syne,sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(tL(S.tier)+' • ×'+eM(),CW/2,CH*.028);
+
+    // power-up bar — bottom of canvas
+    const activePUType=PU.find(x=>x.id===aPU.id);
+    if(aPU.id&&activePUType){
+      const bH=Math.round(CH*.04),bY=CH*(1-.06);
+      ctx.fillStyle='#000000AA';
+      rR(ctx,CW*.04,bY,CW*.92,bH,bH/2);ctx.fill();
+      const fw=(aPU.t/aPU.mx)*CW*.92;
+      ctx.fillStyle=activePUType.col+'88';
+      rR(ctx,CW*.04,bY,fw,bH,bH/2);ctx.fill();
+      ctx.fillStyle=activePUType.col;
+      ctx.font=`bold ${Math.round(bH*.6)}px Syne,sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(activePUType.lbl+' ACTIVE',CW/2,bY+bH/2+1);
+    }
+    if(shield){
+      ctx.fillStyle='#8B5CF6CC';ctx.font=`bold ${fSm}px Syne,sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText('🛡️ SHIELD ACTIVE',CW/2,CH*.94);ctx.textBaseline='top';
+    }
+    // active mult badge
+    const em=eM();
+    if(em>S.mult){
+      const puT=PU.find(x=>x.id===aPU.id);
+      ctx.fillStyle=(puT||{col:'#00FF88'}).col;
+      ctx.font=`bold ${fSm}px Space Mono,monospace`;ctx.textAlign='right';ctx.textBaseline='bottom';
+      ctx.fillText('×'+em+' ON',CW*(1-.04),CH*.94);ctx.textBaseline='top';
+    }
+  }
+
+  // ── TAP TO FLY prompt ──
+  if(waitTap){
+    // pulsing ring around bird
+    ctx.save();ctx.translate(BX,bird.y);ctx.globalAlpha=tapA*.6;
+    ctx.strokeStyle='#F5C518';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(0,0,BR+BR*.7+Math.sin(frame*.1)*BR*.3,0,Math.PI*2);ctx.stroke();
+    ctx.restore();ctx.globalAlpha=1;
+
+    // hint box — vertically centered on canvas
+    const hY=CH*.62,hW=CW*.72,hH=CH*.1;
+    ctx.globalAlpha=tapA*.9;
+    ctx.fillStyle='#000000CC';
+    rR(ctx,CW/2-hW/2,hY-hH/2,hW,hH,hH/2);ctx.fill();
+    ctx.strokeStyle='#F5C518AA';ctx.lineWidth=2;
+    rR(ctx,CW/2-hW/2,hY-hH/2,hW,hH,hH/2);ctx.stroke();
+    ctx.fillStyle='#F5C518';
+    ctx.font=`900 ${Math.round(hH*.52)}px Syne,sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('👆 TAP SCREEN TO FLY!',CW/2,hY);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawBubble(x,y,t){
+  const r=Math.round(CW*.052);
+  ctx.save();ctx.translate(x,y);
+  ctx.shadowColor=t.glow;ctx.shadowBlur=20;
+  ctx.beginPath();ctx.arc(0,0,r+3,0,Math.PI*2);
+  ctx.strokeStyle=t.col+'55';ctx.lineWidth=2;ctx.stroke();
+  const g=ctx.createRadialGradient(-r*.25,-r*.25,1,0,0,r);
+  g.addColorStop(0,'#ffffff22');g.addColorStop(.4,t.col+'CC');g.addColorStop(1,t.in||'#000');
+  ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  ctx.shadowBlur=0;ctx.fillStyle='#fff';
+  ctx.font=`bold ${Math.round(r*.5)}px Syne,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(t.lbl,0,0);ctx.restore();
+}
+
+function drawEye(x,y,angle){
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+  // feathers
+  ctx.strokeStyle='#78716C2A';ctx.lineWidth=3;
+  for(let i=0;i<8;i++){const a=i/8*Math.PI*2;ctx.beginPath();ctx.moveTo(Math.cos(a)*(BR+1),Math.sin(a)*(BR+1));ctx.lineTo(Math.cos(a)*(BR+BR*.45),Math.sin(a)*(BR+BR*.45));ctx.stroke();}
+  // glow
+  const gc=aPU.id==='m3'?'#F5C518':aPU.id==='m2'?'#00FF88':'#F5C518';
+  ctx.shadowColor=gc;ctx.shadowBlur=waitTap?BR*1.3:bird.vy<-CH*.012?BR*1.2:BR*.7;
+  // iris
+  const g=ctx.createRadialGradient(-BR*.2,-BR*.2,1,0,0,BR);
+  g.addColorStop(0,'#000');g.addColorStop(.28,'#000');
+  g.addColorStop(.36,'#F5C518');g.addColorStop(.62,'#F59E0B');
+  g.addColorStop(.82,'#92400E');g.addColorStop(1,'#3D1F00');
+  ctx.beginPath();ctx.arc(0,0,BR,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  // pupil
+  ctx.beginPath();ctx.arc(-BR*.06,-BR*.06,BR*.33,0,Math.PI*2);ctx.fillStyle='#000';ctx.fill();
+  ctx.shadowBlur=0;
+  // shine
+  ctx.beginPath();ctx.arc(-BR*.27,-BR*.27,BR*.15,0,Math.PI*2);ctx.fillStyle='#ffffff55';ctx.fill();
+  // ring
+  ctx.beginPath();ctx.arc(0,0,BR,0,Math.PI*2);ctx.strokeStyle='#F5C51444';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.restore();
+}
+
+function rR(c,x,y,w,h,r){
+  c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);
+  c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);
+  c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();
+}
+
+function drawIdle(){
+  if(!ctx||!CW)return;
+  const sky=ctx.createLinearGradient(0,0,0,CH);
+  sky.addColorStop(0,'#070714');sky.addColorStop(1,'#0D0D20');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,CW,CH);
+  drawEye(CW/2,CH/2,0);
+  ctx.fillStyle='#F5C518AA';ctx.font=`bold ${Math.round(CW*.038)}px Syne,sans-serif`;
+  ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('👇 Tap START HUNTING below',CW/2,CH/2+BR*2);
+}
+
+/* ── END GAME ────────────────────────────── */
+function endGame(){
+  running=false;cancelAnimationFrame(raf);S.gamesPlayed++;
+  const isNew=score>S.bestScore;
+  if(isNew){S.bestScore=score;localStorage.setItem('birde_b4_'+S.wallet,score);}
+  svToLB(S.wallet,score,S.tier);svS();rnMS();
+  document.getElementById('eScore').textContent=score.toLocaleString();
+  document.getElementById('nBest').classList.toggle('hidden',!isNew);
+  document.getElementById('ovEnd').classList.remove('hidden');
+  document.getElementById('botSheet').classList.add('open');
+}
+
+/* ── LEADERBOARD ─────────────────────────── */
+function svToLB(w,sc,tier){
+  try{let lb=JSON.parse(localStorage.getItem('birde_lb4')||'[]');
+    const i=lb.findIndex(e=>e.w===w);
+    if(i>=0){if(sc>lb[i].sc)lb[i]={w,sc,tier};}else lb.push({w,sc,tier});
+    lb.sort((a,b)=>b.sc-a.sc);lb=lb.slice(0,20);
+    localStorage.setItem('birde_lb4',JSON.stringify(lb));rnLB();}catch(e){}
+}
+function rnLB(){
+  const el=document.getElementById('lbL');
+  let lb=[];try{lb=JSON.parse(localStorage.getItem('birde_lb4')||'[]');}catch(e){}
+  if(!lb.length){el.innerHTML='<div class="lbEm">👁️ No hunters yet — be first!</div>';return;}
+  const m=['🥇','🥈','🥉'];
+  el.innerHTML=lb.slice(0,10).map((e,i)=>`
+    <div class="lbRow${e.w===S.wallet?' me':''}">
+      <span class="lbR">${m[i]||'#'+(i+1)}</span>
+      <span class="lbA">${shW(e.w)}</span>
+      <span style="font-size:.6rem">${tL(e.tier)}</span>
+      <span class="lbP">${e.sc.toLocaleString()}</span>
+    </div>`).join('');
+}
+
+/* ── MISSIONS ────────────────────────────── */
+const MS=[
+  {ico:'🎮',t:'First Hunt',d:'Play your first game',r:'Bonus pts',ok:()=>S.gamesPlayed>=1,p:()=>[Math.min(S.gamesPlayed,1),1]},
+  {ico:'⚡',t:'Power Hunter',d:'Collect your first power-up',r:'1M $BIRDE',ok:()=>(S.puC||0)>=1,p:()=>[Math.min(S.puC||0,1),1]},
+  {ico:'🟢',t:'Pump It',d:'Collect 5 power-up bubbles',r:'3M $BIRDE',ok:()=>(S.puC||0)>=5,p:()=>[Math.min(S.puC||0,5),5]},
+  {ico:'🐦',t:'Spread the Flock',d:'Share score on X',r:'500K $BIRDE',ok:()=>S.shared>=1,p:()=>[Math.min(S.shared,1),1]},
+  {ico:'🔥',t:'On Fire',d:'3-day play streak',r:'2M $BIRDE',ok:()=>S.streak>=3,p:()=>[Math.min(S.streak,3),3]},
+  {ico:'💥',t:'Diamond Talons',d:'7-day play streak',r:'7M $BIRDE',ok:()=>S.streak>=7,p:()=>[Math.min(S.streak,7),7]},
+  {ico:'🎯',t:'Sharp Eye',d:'Score 500 points',r:'1.5M $BIRDE',ok:()=>S.bestScore>=500,p:()=>[Math.min(S.bestScore,500),500]},
+  {ico:'🚀',t:'Eye of God',d:'Score 2,000 points',r:'5M $BIRDE',ok:()=>S.bestScore>=2000,p:()=>[Math.min(S.bestScore,2000),2000]},
+  {ico:'🪙',t:'Coin Hunter',d:'Catch 50 total coins',r:'2M $BIRDE',ok:()=>S.coinsTotal>=50,p:()=>[Math.min(S.coinsTotal,50),50]},
+];
+function rnMS(){
+  document.getElementById('msL').innerHTML=MS.map(m=>{
+    const done=m.ok();const[c,mx]=m.p();const pct=Math.round(c/mx*100);
+    return`<div class="msC${done?' msDone':''}">
+      <div class="msI">${m.ico}</div>
+      <div class="msB"><div class="msT">${m.t}${done?' ✓':''}</div>
+        <div class="msD">${m.d}</div>
+        ${!done?`<div class="msPr"><div class="msBr" style="width:${pct}%"></div></div>`:''}
+      </div>
+      <div class="msR">+${m.r}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── SHARE ───────────────────────────────── */
+let lastSc=0;
+function openSh(){
+  lastSc=score;
+  const txt=`👁️ I scored ${score.toLocaleString()} on the $BIRDE Eye of the Hunter game!\n\n🔥 Streak: ${S.streak} days | ${tL(S.tier)}\n⚡ Power-ups: ${S.puC||0}\n🏆 Best: ${S.bestScore.toLocaleString()}\n\nPlay daily & earn $BIRDE rewards 👇\n${CFG.link}\n\n${CFG.tags}`;
+  document.getElementById('smTx').textContent=txt;
+  document.getElementById('sMod').classList.add('open');
+}
+function closeSh(){document.getElementById('sMod').classList.remove('open');}
+function doTweet(){
+  const txt=`👁️ Scored ${lastSc.toLocaleString()} on $BIRDE Eye of the Hunter! 🦅\nStreak: ${S.streak}d • ${tL(S.tier)}\nPlay & earn $BIRDE 👇 ${CFG.link} ${CFG.tags}`;
+  window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(txt),'_blank');
+  S.shared=(S.shared||0)+1;svS();rnMS();closeSh();
+}
+
+/* ── TABS ────────────────────────────────── */
+function swT(id,el){
+  document.querySelectorAll('.btab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
+  document.querySelectorAll('#bPane>div').forEach(d=>d.classList.add('hidden'));
+  document.getElementById('t-'+id).classList.remove('hidden');
+}
+
+/* ── TICKER ──────────────────────────────── */
+function startTicker(){
+  let p=CFG.basePrice;
+  setInterval(()=>{
+    p=Math.max(1e-12,p+(Math.random()-.47)*p*.09);
+    const chg=((p-CFG.basePrice)/CFG.basePrice*100);
+    document.getElementById('tP').textContent='$'+p.toFixed(10);
+    const c=document.getElementById('tC');
+    if(chg>=0){c.textContent='▲ '+chg.toFixed(2)+'%';c.className='pill up';}
+    else{c.textContent='▼ '+Math.abs(chg).toFixed(2)+'%';c.className='pill dn';}
+  },3500);
+}
+
+/* ── BOOT ────────────────────────────────── */
+ldS();
+if(S.wallet){S.tier=gT(S.tokens);S.mult=CFG.mults[S.tier]||.5;ckStreak();showGame();}
+</script>
+</body>
+</html>
